@@ -1,100 +1,148 @@
+import subprocess
+import sys
+
+
+# Function to check and install missing libraries
+def install_libraries():
+    try:
+        import click
+        import json
+        import datetime
+    except ModuleNotFoundError:
+        print("Some libraries are missing, installing them...")
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'], check=True)
+        print("Libraries installed. Please try running the script again.")
+        sys.exit(1)
+
+# Check and install libraries if missing
+install_libraries()
+
 import click
 import json
 from datetime import datetime
+from typing import Optional
 
-# Numele fișierului JSON
 TASKS_FILE = "tasks.json"
 
-# Inițializarea fișierului JSON dacă nu există
 def initialize_tasks_file():
     try:
         with open(TASKS_FILE, 'x') as file:
             json.dump([], file)
     except FileExistsError:
         pass
-    
-def find_task_by_desc(desc):
-    tasks = read_tasks()
-    for task in tasks:
-        if task["description"] == desc:
-            return task
-    return None
 
-
-def update_task_description(task_id, new_description):
-    tasks = read_tasks()  # Citim task-urile existente
-    task_found = False
-
-    for task in tasks:
-        if task["id"] == task_id:  # Găsim task-ul după ID
-            task["description"] = new_description  # Actualizăm descrierea
-            task["updated_at"] = datetime.now().strftime('%Y-%m-%d')  # Actualizăm timestamp-ul
-            task_found = True
-            break
-
-    if task_found:
-        write_tasks(tasks)  # Salvăm modificările în fișier
-        print(f"Task-ul cu ID-ul {task_id} a fost actualizat cu succes.")
-    else:
-        print(f"Niciun task cu ID-ul {task_id} nu a fost găsit.")
-
-# Funcție pentru a citi task-urile existente din fișier
 def read_tasks():
     with open(TASKS_FILE, 'r') as file:
         return json.load(file)
 
-# Funcție pentru a scrie task-urile în fișier
 def write_tasks(tasks):
     with open(TASKS_FILE, 'w') as file:
         json.dump(tasks, file, indent=4)
 
-# Grupul principal de comenzi
+def find_task_by_desc(desc):
+    tasks = read_tasks()
+    return next((task for task in tasks if task["description"] == desc), None)
+
+def find_task(id, verify: Optional[bool] = True):
+    tasks = read_tasks()
+    return next((task for task in tasks if task["id"] == id), None) if verify else True
+
+def remove_task_by_id(task_id):
+    tasks = read_tasks()
+    task = next((task for task in tasks if task["id"] == task_id), None)
+    if task:
+        tasks.remove(task)
+        write_tasks(tasks)
+        return f"Task with ID {task_id} has been deleted."
+    return f"No task with ID {task_id} found."
+
+def update_task_status(task_id: int, status):
+    tasks = read_tasks()
+    task = next((task for task in tasks if task["id"] == task_id), None)
+    if task:
+        if task["status"] == status:
+            return print(f"This task is already marked as {status}")
+        task["status"] = status
+        task["updated_at"] = datetime.now().strftime('%Y-%m-%d')
+        write_tasks(tasks)
+        print(f"Task with ID {task_id} has been updated successfully.")
+    else:
+        print(f"No task with ID {task_id} found.")
+
+def update_task_description(task_id, new_description):
+    tasks = read_tasks()
+    task = next((task for task in tasks if task["id"] == task_id), None)
+    if task:
+        task["description"] = new_description
+        task["updated_at"] = datetime.now().strftime('%Y-%m-%d')
+        write_tasks(tasks)
+        print(f"Task with ID {task_id} has been updated successfully.")
+    else:
+        print(f"No task with ID {task_id} found.")
+
 @click.group()
 def cli():
-    """Task Manager CLI"""
     initialize_tasks_file()
 
-# Comanda pentru a adăuga un task
 @cli.command()
 @click.argument('name')
 def add(name):
-    """Adaugă un task nou."""
     if not name:
-        click.echo("Numele task-ului este obligatoriu!")
+        click.echo("Task name is required!")
         return
     if find_task_by_desc(name):
-        click.echo("Task-ul există deja!")
+        click.echo("Task already exists!")
         return
-    try:
-        # Crearea unui task nou
-        task = {
-            "id": None,
-            "description": name,
-            "status": "to-do",
-            "created_at": datetime.now().strftime('%Y-%m-%d'),
-            "updated_at": datetime.now().strftime('%Y-%m-%d')
-        }
+    tasks = read_tasks()
+    max_id = max((task["id"] for task in tasks), default=0)
+    task = {
+        "id": max_id + 1,
+        "description": name,
+        "status": "to-do",
+        "created_at": datetime.now().strftime('%Y-%m-%d'),
+        "updated_at": datetime.now().strftime('%Y-%m-%d')
+    }
+    tasks.append(task)
+    write_tasks(tasks)
+    click.echo(f"The task '{task['description']}' was added successfully. (ID: {task['id']})")
 
-        # Citirea task-urilor existente și adăugarea celui nou
-        tasks = read_tasks()
-        task["id"] = len(tasks) + 1  # Generare automată ID
-        tasks.append(task)
-
-        # Salvarea task-urilor în fișier
-        write_tasks(tasks)
-
-        click.echo(f"The task '{task['description']}' was added successfully. (ID: {task['id']})")
-    except Exception as e:
-        click.echo(f"An error occurred: {str(e)}")
 @cli.command()
 @click.argument('id', type=int)
 @click.argument('description', type=str)
 def update(id, description):
-    if not id and description:
-        click.echo("Id and description are required!")
-        return
-    else:
+    if id and description:
         update_task_description(id, description)
-        
+
+@cli.command()
+@click.argument('id', type=int)
+def remove(id):
+    click.echo(remove_task_by_id(id))
+
+@cli.command()
+@click.argument('id', type=int)
+def mark_in_progress(id):
+    update_task_status(id, "in-progress")
+
+@cli.command()
+@click.argument('id', type=int)
+def mark_done(id):
+    if input("Do you want to mark this task as done and delete it? (y/n): ").lower() == 'y':
+        print(remove_task_by_id(id))
+        print("Task deleted successfully. Great work! :)")
+    else:
+        update_task_status(id, "done")
+
+@cli.command()
+@click.argument('status', type=str, required=False)
+def list(status):
+    tasks = read_tasks()
+    filtered_tasks = [task for task in tasks if status is None or task['status'] == status]
+    if filtered_tasks:
+        click.echo(f"Task List ({status if status else 'All'}):")
+        for task in filtered_tasks:
+            click.echo(f"{task['id']}. {task['description']} (Status: {task['status']}, Created: {task['created_at']}, Updated: {task['updated_at']})")
+    else:
+        click.echo(f"No tasks found with status '{status}'." if status else "No tasks available.")
+
 if __name__ == "__main__":
     cli()
