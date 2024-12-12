@@ -15,9 +15,4 @@
 <p>This program has two versions available:</p> <ul> <li>One version uses only default <a href="https://www.python.org/">Python</a> libraries.</li> <li>One version uses the <a href="https://click.palletsprojects.com/">Click library</a> for building the CLI.</li> </ul>
 
 <h2>Note</h2>
-<p>Please make sure to use the correct version of the program according to your needs. If you have any issues or questions, feel free to ask.</p>
-<<<<<<< HEAD
-<p style="text-style:bold">This project is made according to the cli project from <a href="https://roadmap.sh/projects/task-tracker">roadmap.sh</a></p>
-=======
-<p style="text-style:bold">This project is made according to the cli project from <a href="https://roadmap.sh/projects/task-tracker">roadmap.sh</a></p>
->>>>>>> 3a20bc004288863e0ed0a3e36b2eba022378b855
+<p>Please make sure to use the correct version of the program according to your needs. If you have any issues or questions, feel free to ask.</p
