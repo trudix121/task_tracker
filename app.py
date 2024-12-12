@@ -113,7 +113,7 @@ def update(id, description):
     if id and description:
         update_task_description(id, description)
 
-@cli.command(help="Remove a task from the list.") #test
+@cli.command(help="Remove a task from the list.")
 @click.argument('id', type=int)
 def remove(id):
     click.echo(remove_task_by_id(id))
