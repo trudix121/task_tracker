@@ -84,7 +84,7 @@ def update_task_description(task_id, new_description):
 def cli():
     initialize_tasks_file()
 
-@cli.command()
+@cli.command(help="Add a new task to the list.")
 @click.argument('name')
 def add(name):
     if not name:
@@ -106,24 +106,24 @@ def add(name):
     write_tasks(tasks)
     click.echo(f"The task '{task['description']}' was added successfully. (ID: {task['id']})")
 
-@cli.command()
+@cli.command(help="Update description of a task.")
 @click.argument('id', type=int)
 @click.argument('description', type=str)
 def update(id, description):
     if id and description:
         update_task_description(id, description)
 
-@cli.command()
+@cli.command(help="Remove a task from the list.")
 @click.argument('id', type=int)
 def remove(id):
     click.echo(remove_task_by_id(id))
 
-@cli.command()
+@cli.command(help="Mark a task as 'to-do'.")
 @click.argument('id', type=int)
 def mark_in_progress(id):
     update_task_status(id, "in-progress")
 
-@cli.command()
+@cli.command(help="Mark a task as 'done'.")
 @click.argument('id', type=int)
 def mark_done(id):
     if input("Do you want to mark this task as done and delete it? (y/n): ").lower() == 'y':
@@ -132,7 +132,7 @@ def mark_done(id):
     else:
         update_task_status(id, "done")
 
-@cli.command()
+@cli.command(help="List all tasks/tasks with different status.")
 @click.argument('status', type=str, required=False)
 def list(status):
     tasks = read_tasks()
