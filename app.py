@@ -118,10 +118,15 @@ def update(id, description):
 def remove(id):
     click.echo(remove_task_by_id(id))
 
-@cli.command(help="Mark a task as 'to-do'.")
+@cli.command(help="Mark a task as 'in-progress'.")
 @click.argument('id', type=int)
 def mark_in_progress(id):
-    update_task_status(id, "in-progress")
+    update_task_status(id, "done")
+
+@cli.command(help="Mark a task as 'to-do'.")
+@click.argument('id', type=int)
+def mark_to_do(id):
+    update_task_status(id, "to-do")
 
 @cli.command(help="Mark a task as 'done'.")
 @click.argument('id', type=int)
